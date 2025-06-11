@@ -348,3 +348,12 @@ SELECT DISTINCT OpSys FROM laptops;
 
 
 SELECT * FROM laptops;
+
+
+
+
+
+
+
+
+
