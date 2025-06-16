@@ -1,5 +1,6 @@
 USE laptopdb;
 
+
 SELECT * FROM laptops;
 
 
@@ -149,31 +150,110 @@ GROUP BY Company;
 
 # 6. Numerical - Categorical
 		-- Compare distribution across categories
+        -- Categorical Numerical Bivariate Analysis
+SELECT Company, MIN(Price), MAX(Price), AVG(Price), STD(Price)
+FROM laptops
+GROUP BY Company;
 
 
 # 7. Missing Value Treatment
+SELECT *
+FROM laptops
+WHERE Weight IS NULL OR Inches IS NULL;
+-- Weight = 178
+-- Inches = 453
+
+# Filling NULL Values with AVG Weight
+SELECT AVG(Weight)
+FROM laptops;
+
+UPDATE laptops
+SET Weight = (SELECT AVG(Weight) FROM laptops)
+WHERE Weight IS NULL;
+
+
+# Filling NULL Values with AVG Price of Corresponding Company
+SELECT Company, AVG(Weight)
+FROM laptops
+GROUP BY Company;
+
+UPDATE laptops t1
+SET Weight = (SELECT AVG(Weight) FROM laptops t2 WHERE t2.Company = t1.Company)
+WHERE Weight IS NULL;
+
+
+# Filling NULL Values with AVG Price of Corresponding Company And Processor
+UPDATE laptops t1
+SET Weight = (SELECT AVG(Weight) FROM laptops t2 WHERE	t2.Company = t1.Company AND	t2.cpu_name = t1.cpu_name)
+WHERE Weight IS NULL;
+
+
+UPDATE laptops t1
+JOIN (
+    SELECT Company, cpu_name, AVG(Inches) AS avg_Inches
+    FROM laptops
+    WHERE Inches IS NOT NULL
+    GROUP BY Company, cpu_name
+) t2 ON t1.Company = t2.Company AND t1.cpu_name = t2.cpu_name
+SET t1.Inches = t2.avg_Inches
+WHERE t1.Inches IS NULL;
 
 
 # 8. Feature Engineering
-		-- PPI
-        -- Price Bracket
+
+-- PPI
+ALTER TABLE laptops 
+ADD COLUMN ppi INTEGER 
+AFTER resolution_height;
+
+UPDATE laptops
+SET ppi = ROUND(SQRT((resolution_width*resolution_width) + (resolution_height*resolution_height)) / Inches);
+
+SELECT * FROM laptops
+ORDER BY ppi DESC;
+
+
+-- Screen Size Bracket
+ALTER TABLE laptops 
+ADD COLUMN screen_size VARCHAR(255) 
+AFTER Inches;
+
+UPDATE laptops
+SET screen_size = 	CASE 
+									WHEN  Inches < 14 THEN 'small'
+									WHEN  Inches >= 14 AND Inches < 17 THEN 'medium'
+									ELSE 'large'
+								END;
+
+SELECT screen_size, AVG(Price)
+FROM laptops
+GROUP BY screen_size;
+
+
+SELECT * FROM laptops;
 
 
 # 9. One Hot Encoding
+ALTER TABLE laptops
+ADD COLUMN intel TINYINT(1) DEFAULT 0 AFTER gpu_brand,
+ADD COLUMN amd TINYINT(1) DEFAULT 0 AFTER intel,
+ADD COLUMN nvidia TINYINT(1) DEFAULT 0 AFTER amd,
+ADD COLUMN arm TINYINT(1) DEFAULT 0 AFTER nvidia;
 
 
+UPDATE laptops
+SET 
+    intel = CASE WHEN gpu_brand = 'Intel' THEN 1 ELSE 0 END,
+    amd = CASE WHEN gpu_brand = 'AMD' THEN 1 ELSE 0 END,
+    nvidia = CASE WHEN gpu_brand = 'Nvidia' THEN 1 ELSE 0 END,
+    arm = CASE WHEN gpu_brand = 'ARM' THEN 1 ELSE 0 END;
 
 
+ALTER TABLE laptops
+DROP COLUMN gpu_brand;
 
 
-
-
-
-
-
-
-
-
+SELECT * FROM laptops;
 
 
 
